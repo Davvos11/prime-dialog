@@ -1,7 +1,7 @@
 import os
 import sys
 
-from PyQt5.QtWidgets import *
+from PySide2.QtWidgets import *
 
 
 class Solution:
@@ -61,20 +61,21 @@ class Dialog(QWidget):
 
         self.solution = None
 
+        text = ''
         # Show optimus-manager information:
         if om_mode:
-            text = 'You are running on '+om_mode+' graphics (using optimus-manager)'
             if om_mode == 'nvidia':
-                text = 'You are already running on '+om_mode+' graphics (using optimus-manager)'
-            self.optimus_manager_text = QLabel(self)
-            self.optimus_manager_text.setText(text)
+                text = 'You are already running on '+om_mode.title()+' graphics (using optimus-manager)'
+        text += 'Choose a method to launch this game'
+        self.optimus_manager_text = QLabel(self)
+        self.optimus_manager_text.setText(text)
 
         # Show dropdown with solutions
         self.dropdown = QComboBox(self)
         for run in solutions.run_list:
             self.dropdown.addItem(run.name)
 
-        self.dropdown.activated[str].connect(self.onChanged)
+        self.dropdown.activated[str].connect(self.on_changed)
 
         # Add placeholder for the command that will be ran
         self.command_text = QLabel(self)
@@ -90,16 +91,17 @@ class Dialog(QWidget):
         self.layout.addWidget(self.command_text)
         self.layout.addWidget(self.button)
 
-        self.onChanged(self.dropdown.currentText())
+        self.on_changed(self.dropdown.currentText())
 
         self.setLayout(self.layout)
 
-    def onChanged(self, text):
+    def on_changed(self, text):
         chosen_solution = [s for s in self.solutions.run_list if s.name == text][0]
         self.solution = chosen_solution
 
-        self.command_text.setText('Command: ' +
-                                  (chosen_solution.command + ' ' if chosen_solution.command else '') + self.command)
+        self.command_text.setText('Command: <span style=\'color: grey;\'>' +
+                                  (chosen_solution.command + ' ' if chosen_solution.command else '') + self.command
+                                  + '</span')
         self.command_text.adjustSize()
 
     def on_button_clicked(self):
@@ -108,26 +110,13 @@ class Dialog(QWidget):
 
 
 if __name__ == "__main__":
-    solutions = Solutions()
+    solutions_object = Solutions()
+    solutions_object.run_list[0].name += ' ('+get_optimus_manager_mode().title()+' graphics)'
 
-    solution = None
-
-    # if solutions.optimus_manager:
-    #     # Check if X is running on the nvidia card
-    #     mode = get_optimus_manager_mode()
-    #     print('You are running on ' + mode + ' graphics using optimus-manager')
-    #     if mode == 'nvidia':
-    #         solution = ''
-    #         print('continue')
-    # for i, run in enumerate(solutions.run_list):
-    #     print(str(i) + ': ' + str(run))
-    # solution = solutions.run_list[int(input('Choose a solution: '))]
-    #
     cmd = " ".join([arg for i, arg in enumerate(sys.argv) if i != 0])
-    # run_with_solution(cmd, solution)
 
-    app = QApplication(sys.argv)
-    diag = Dialog(solutions, cmd, get_optimus_manager_mode())
-    # diag.resize(500, 500)
+    app = QApplication()
+    diag = Dialog(solutions_object, cmd, get_optimus_manager_mode())
+
     diag.show()
-    app.exec_()
+    sys.exit(app.exec_())
